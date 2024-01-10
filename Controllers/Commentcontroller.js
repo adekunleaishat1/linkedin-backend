@@ -3,6 +3,7 @@ const usermodel = require("../Model/Usermodel");
 const commentmodel = require("../Model/Comment");
 const likemodel = require("../Model/Like");
 const { verifyToken } = require("../Services/sessionservice");
+const notificationmodel = require('../Model/Notification')
 
 const postlike = async (req, res) => {
   try {
@@ -19,15 +20,26 @@ const postlike = async (req, res) => {
     if (likeuser) {
       console.log(likeuser._id);
       const unlike = await likemodel.findByIdAndDelete({ _id: likeuser._id });
-      console.log(unlike);
     } else {
       const like = await likemodel.create({
         postliked: postliked,
         userliked: user_id,
         likes: true,
       });
-      console.log(like);
+      const post = await postmodel.findById({_id: postliked})
+      let userEmail;
+      if (post && post.user) {
+        userEmail = post.user.email;
+        console.log('User email:', userEmail);
+      } else {
+        console.log('Post or user not found');
+      }
+      const notification = await notificationmodel.create({
+        receiveremail: userEmail,
+        message:`${user.firstname} ${user.lastname} liked your post`
+      })
     }
+   
     return res
       .status(200)
       .send({ message: "you have successfully liked this post", status: true });
@@ -65,6 +77,16 @@ const postComment = async (req, res) => {
         .status(407)
         .send({ message: "error occured while commenting", status: false });
     }
+    const post = await postmodel.findById({_id: postcomment})
+    let userEmail
+    if (post && post.user) {
+      userEmail = post.user.email;
+      console.log('User email:', userEmail);
+    }
+    const notification = await notificationmodel.create({
+      receiveremail: userEmail,
+      message:`${user.firstname} ${user.lastname} comment your post`
+    })
     return res
       .status(200)
       .send({ message: "comment successfully", status: true });
@@ -128,7 +150,7 @@ const getcomment = async(req, res) =>{
     const token = req.headers.authorization.split(" ")[1];
     const email = verifyToken(token);
     const user = await usermodel.findOne({ email });
-  console.log('working :',user);
+ 
  if (!user) {
    return res.status(400).send({message:"user not found", status: false})
  }
@@ -137,17 +159,15 @@ const getcomment = async(req, res) =>{
      console.log("allpost 567",allpost);
      for(let post of allpost) {
            const postid = post._id.toString()
-           console.log("id of all post:", postid);
-
+          
            const commentedpost = await commentmodel.find({ postcomment: postid });
-           console.log("all comment",commentedpost)
-
+        
            const alc = allcomment.push({
             postid : postid,
             comment: commentedpost,
            })
      }
-     console.log(allcomment);
+
      return res.status(200).send({message:"comment fetched", status:true, allcomment})
   } catch (error) {
     console.log(error);
@@ -155,4 +175,45 @@ const getcomment = async(req, res) =>{
 
 }
 
-module.exports = { postlike, postComment, getlike, getcomment };
+const getnotification =async (req, res) =>{
+  try {
+    const token = req.headers.authorization.split(" ")[1]
+     const email = verifyToken(token)  
+     const user = await usermodel.findOne({email})
+     if (!user) {
+      return res.status(402).send({message:"user not found", status:false})
+     }
+     const notification = await notificationmodel.find({receiveremail: user.email})
+     if (!notification) {
+      return res.status(409).send({message:"error getting notification", status:false})
+     }
+     return res.status(200).send({message:"fetched successful", status:true, notification})
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+const setnotify = async(req , res) =>{
+  try {
+    const {isRead} = req.body
+    const token = req.headers.authorization.split(" ")[1]
+    const email = verifyToken(token)  
+    const user = await usermodel.findOne({email})
+    if (!user) {
+     return res.status(402).send({message:"user not found", status:false})
+    }
+     const setread = await notificationmodel.updateMany(
+      {receiveremail: email},
+      {$set:{isRead: isRead}}
+     ) 
+     if (!setread) {
+      return res.status(409).send({message:"error occured", status:false})
+     }
+     return res.status(200).send({message:"update successful", status:true})
+  } catch (error) {
+    console.log(error);
+    
+  }
+}
+
+module.exports = { postlike, postComment, getlike, getcomment, getnotification, setnotify };

@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken")
 const postmodel = require("../Model/Postmodel")
 const {cloudinary} = require("../utils/cloudinary")
 const {verifyToken} = require("../Services/sessionservice")
-
+const notificationmodel = require("../Model/Notification")
 
 
 const signup = async(req, res) =>{
@@ -111,10 +111,14 @@ const sendpost = async(req, res) =>{
        image:newimage.secure_url, 
        user:newuser
       })
-    console.log(post);
+    
     if (!post) {
       return res.status(409).send({message:"error occured while making a post", status: false})
     }
+    const notification = await notificationmodel.create({
+      receiveremail: newuser.email,
+      message:`${newuser.firstname} make a post on their timeline`
+    })
     return res.status(200).send({message:"Post successfully", status: true})
 
   } catch (error) {
@@ -169,7 +173,6 @@ const uploadprofile = async (req, res) => {
       { $set: { user: upload.toObject() } }
     );
 
-    console.log(updatePosts);
 
     if (!updatePosts) {
       return res.status(409).send({ message: "error occurred while updating posts", status: false });

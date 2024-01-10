@@ -15,9 +15,9 @@ app.use(express.urlencoded({extended:true, limit:"50mb"}))
 
 
 
-const URI = "mongodb+srv://aishatadekunle877:aishat@cluster0.t92x8pf.mongodb.net/Linkedin_db?retryWrites=true&w=majority"
+const Uri = process.env.MONGODB
 
-mongoose.connect(URI).then((res)=>{
+mongoose.connect(Uri).then((res)=>{
 
     console.log("database connected successfully");
 }).catch((err)=>{

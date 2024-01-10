@@ -1,6 +1,6 @@
 const express = require("express")
 const {signup, login, getdashboard, sendpost, getpost, getOneuser,uploadprofile} = require("../Controllers/Usercontroller")
-const {postlike, postComment,getlike, getcomment} = require("../Controllers/Commentcontroller")
+const {postlike, postComment,getlike, getcomment, getnotification, setnotify} = require("../Controllers/Commentcontroller")
 const userrouter = express.Router()
 
 
@@ -15,6 +15,8 @@ userrouter.post("/like", postlike)
 userrouter.post("/comment", postComment)
 userrouter.get("/getlike", getlike)
 userrouter.get("/getcomment", getcomment)
+userrouter.get("/getnotify", getnotification)
+userrouter.post("/read", setnotify)
 
 
 module.exports = userrouter
